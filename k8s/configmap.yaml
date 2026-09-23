@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oms4-config
+  namespace: oms
+data:
+  SERVICE_NAME: OMS4
+  ROOT_PATH: /oms4
+  KAFKA_BOOTSTRAP_SERVERS: kafka.oms.svc.cluster.local:9092
+  SMTP_HOST: mailhog
+  SMTP_PORT: "1025"
+  EMAIL_FROM: noreply@oms.local
