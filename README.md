@@ -124,13 +124,6 @@ http://localhost:8025
 http://oms.local/oms4/docs
 ```
 
-Браузером можно открыть `GET /health`; отправку email нужно вызывать как `POST` из Swagger UI, Postman или `curl`:
-
-```text
-GET  http://oms.local/oms4/health
-POST http://oms.local/oms4/notifications/email
-```
-
 ## Docker
 
 ```bash
@@ -144,15 +137,14 @@ docker run --rm -p 8004:8000 -e SMTP_HOST=host.docker.internal -e SMTP_PORT=1025
 kubectl apply -f ../platform/k8s/namespace.yaml
 copy k8s\secret.example.yaml k8s\secret.yaml
 kubectl apply -f k8s/
+kubectl -n oms port-forward svc/oms4 8004:80
 ```
 
-При установленном Ingress из `platform/k8s/ingress.yaml` встроенный Swagger UI OMS4 доступен без port-forward:
+После port-forward встроенный Swagger UI OMS4 доступен по адресу:
 
 ```text
-http://oms.local/oms4/docs
+http://localhost:8004/docs
 ```
-
-Если Ingress недоступен, для отладки можно использовать `kubectl -n oms port-forward svc/oms4 8004:80` и открыть `http://localhost:8004/docs`.
 
 ## Дальнейшее развитие
 
