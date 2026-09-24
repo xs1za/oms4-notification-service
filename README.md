@@ -148,7 +148,7 @@ http://localhost:8004/docs
 
 ## Дальнейшее развитие
 
-- Kafka использовать для событий уведомлений. Для очереди команд `send_email` с retry/DLQ лучше рассмотреть RabbitMQ/Celery.
+- Kafka использовать для событий уведомлений. Для очереди команд `send_email` с retry/DLQ использовать RabbitMQ и lightweight email worker без Celery.
 - Добавить шаблоны писем.
 - Добавить каналы SMS, push, Telegram.
 - Добавить retry policy и dead-letter topic.
