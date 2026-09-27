@@ -38,3 +38,29 @@ spec:
             initialDelaySeconds: 15
             timeoutSeconds: 5
             periodSeconds: 20
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oms4-email-worker
+  namespace: oms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oms4-email-worker
+  template:
+    metadata:
+      labels:
+        app: oms4-email-worker
+    spec:
+      containers:
+        - name: oms4-email-worker
+          image: oms4:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "app.email_worker"]
+          envFrom:
+            - configMapRef:
+                name: oms4-config
+            - secretRef:
+                name: oms4-secret

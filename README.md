@@ -5,8 +5,10 @@
 ## Функции
 
 - Прием запроса на отправку email.
-- Отправка email через SMTP.
-- Публикация результата отправки в Kafka.
+- Постановка команды `email.send` в RabbitMQ.
+- Асинхронная отправка email через lightweight worker без Celery.
+- Retry и DLQ для неуспешной доставки.
+- Публикация статусов уведомлений в Kafka.
 - Базовый health check.
 
 ## Технологии
@@ -16,6 +18,7 @@
 - Uvicorn
 - SMTP через стандартный модуль `smtplib`
 - confluent-kafka
+- RabbitMQ через `pika`
 
 ## API
 
@@ -42,23 +45,29 @@ Content-Type: application/json
 }
 ```
 
-Ответ при успешной постановке/попытке отправки:
+Ответ при успешной постановке в очередь:
 
 ```json
 {
   "notification_id": "uuid",
   "channel": "email",
   "to": "user@example.com",
-  "status": "sent",
+  "status": "queued",
   "created_at": "2026-01-20T09:00:00Z"
 }
 ```
 
-Если SMTP недоступен, сервис вернет `status: failed` и опубликует соответствующее событие.
+Если RabbitMQ недоступен, API вернет `503`. Если SMTP недоступен, worker выполнит retry и затем отправит команду в DLQ `oms4.email.send.dlq`.
 
 ## Kafka events
 
-- `notification.email_status` - результат отправки email.
+- `notification.email_status` - статус email: `queued`, `sent`, `failed`.
+
+## RabbitMQ queues
+
+- `oms4.email.send` - основная очередь команд на отправку email.
+- `oms4.email.send.retry` - retry-очередь с TTL и возвратом в основную очередь.
+- `oms4.email.send.dlq` - dead-letter queue после исчерпания retry.
 
 ## Переменные окружения
 
@@ -71,6 +80,14 @@ Content-Type: application/json
 | `SMTP_USERNAME` | пусто | SMTP пользователь |
 | `SMTP_PASSWORD` | пусто | SMTP пароль |
 | `EMAIL_FROM` | `noreply@example.local` | Отправитель писем |
+| `RABBITMQ_URL` | `amqp://oms:oms@rabbitmq.oms.svc.cluster.local:5672/%2F` | RabbitMQ connection URL |
+| `RABBITMQ_EXCHANGE` | `oms.commands` | Exchange команд |
+| `RABBITMQ_DLX_EXCHANGE` | `oms.commands.dlx` | Exchange DLQ |
+| `EMAIL_SEND_QUEUE` | `oms4.email.send` | Основная email queue |
+| `EMAIL_RETRY_QUEUE` | `oms4.email.send.retry` | Retry queue |
+| `EMAIL_DLQ_QUEUE` | `oms4.email.send.dlq` | DLQ queue |
+| `EMAIL_RETRY_DELAY_MS` | `30000` | Задержка retry |
+| `EMAIL_MAX_RETRIES` | `3` | Максимум retry перед DLQ |
 
 ## Локальный запуск
 
@@ -135,6 +152,7 @@ docker run --rm -p 8004:8000 -e SMTP_HOST=host.docker.internal -e SMTP_PORT=1025
 
 ```bash
 kubectl apply -f ../platform/k8s/namespace.yaml
+kubectl apply -f ../platform/k8s/rabbitmq-dev.yaml
 copy k8s\secret.example.yaml k8s\secret.yaml
 kubectl apply -f k8s/
 kubectl -n oms port-forward svc/oms4 8004:80
@@ -148,8 +166,6 @@ http://localhost:8004/docs
 
 ## Дальнейшее развитие
 
-- Kafka использовать для событий уведомлений. Для очереди команд `send_email` с retry/DLQ использовать RabbitMQ и lightweight email worker без Celery.
 - Добавить шаблоны писем.
 - Добавить каналы SMS, push, Telegram.
-- Добавить retry policy и dead-letter topic.
 - Добавить авторизацию через `OMS1`.

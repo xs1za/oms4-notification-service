@@ -10,3 +10,11 @@ data:
   SMTP_HOST: mailhog
   SMTP_PORT: "1025"
   EMAIL_FROM: noreply@oms.local
+  RABBITMQ_URL: amqp://oms:oms@rabbitmq.oms.svc.cluster.local:5672/%2F
+  RABBITMQ_EXCHANGE: oms.commands
+  RABBITMQ_DLX_EXCHANGE: oms.commands.dlx
+  EMAIL_SEND_QUEUE: oms4.email.send
+  EMAIL_RETRY_QUEUE: oms4.email.send.retry
+  EMAIL_DLQ_QUEUE: oms4.email.send.dlq
+  EMAIL_RETRY_DELAY_MS: "30000"
+  EMAIL_MAX_RETRIES: "3"
