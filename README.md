@@ -63,6 +63,10 @@ Content-Type: application/json
 
 - `notification.email_status` - статус email: `queued`, `sent`, `failed`.
 
+Consumer:
+
+- `operations.shift.status_changed` - изменение статуса смены; `OMS4` принимает решение о необходимости уведомления и обеспечивает идемпотентность по `event_id`.
+
 ## RabbitMQ queues
 
 - `oms4.email.send` - основная очередь команд на отправку email.
@@ -75,6 +79,7 @@ Content-Type: application/json
 | --- | --- | --- |
 | `SERVICE_NAME` | `OMS4` | Имя сервиса |
 | `KAFKA_BOOTSTRAP_SERVERS` | `kafka.oms.svc.cluster.local:9092` | Kafka bootstrap servers |
+| `KAFKA_SHIFT_STATUS_GROUP_ID` | `oms4.shift-status-notifications` | Consumer group для `operations.shift.status_changed` |
 | `SMTP_HOST` | `localhost` | SMTP host |
 | `SMTP_PORT` | `1025` | SMTP port |
 | `SMTP_USERNAME` | пусто | SMTP пользователь |
@@ -163,9 +168,3 @@ kubectl -n oms port-forward svc/oms4 8004:80
 ```text
 http://localhost:8004/docs
 ```
-
-## Дальнейшее развитие
-
-- Добавить шаблоны писем.
-- Добавить каналы SMS, push, Telegram.
-- Добавить авторизацию через `OMS1`.

@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     service_name: str = "OMS4"
     root_path: str = ""
     kafka_bootstrap_servers: str = "kafka.oms.svc.cluster.local:9092"
+    kafka_shift_status_group_id: str = "oms4.shift-status-notifications"
     smtp_host: str = "localhost"
     smtp_port: int = 1025
     smtp_username: str = ""
