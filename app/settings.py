@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     email_dlq_queue: str = "oms4.email.send.dlq"
     email_retry_delay_ms: int = 30000
     email_max_retries: int = 3
+    problem_events_retry_exchange: str = "problem-events.retry.exchange"
+    problem_events_reprocess_exchange: str = "problem-events.reprocess.exchange"
+    problem_events_retry_5m_queue: str = "problem-events.retry.5m"
+    problem_events_retry_15m_queue: str = "problem-events.retry.15m"
+    problem_events_retry_1h_queue: str = "problem-events.retry.1h"
+    problem_events_reprocess_queue: str = "problem-events.reprocess"
+    problem_events_manual_reprocess_queue: str = "problem-events.reprocess.manual"
 
 
 settings = Settings()

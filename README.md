@@ -67,11 +67,31 @@ Consumer:
 
 - `operations.shift.status_changed` - изменение статуса смены; `OMS4` принимает решение о необходимости уведомления и обеспечивает идемпотентность по `event_id`.
 
+Ошибки обработки `operations.shift.status_changed` сохраняются в `problem_events`. Технические ошибки проходят RabbitMQ DLX/TTL retry: 5 минут, 15 минут, 1 час. После неуспешной попытки через 1 час событие переходит в `manual_review`. Бизнес-ошибки переходят в `pending`, ошибки контракта - в `dlq`.
+
 ## RabbitMQ queues
 
 - `oms4.email.send` - основная очередь команд на отправку email.
 - `oms4.email.send.retry` - retry-очередь с TTL и возвратом в основную очередь.
 - `oms4.email.send.dlq` - dead-letter queue после исчерпания retry.
+- `problem-events.retry.5m` - problem events retry queue на 5 минут.
+- `problem-events.retry.15m` - problem events retry queue на 15 минут.
+- `problem-events.retry.1h` - problem events retry queue на 1 час.
+- `problem-events.reprocess` - очередь автоматической повторной обработки problem events.
+- `problem-events.reprocess.manual` - очередь ручной повторной обработки problem events.
+
+## Problem events API
+
+Для доступа требуется заголовок `X-Operational-Role: operations`.
+
+```http
+GET /admin/problem-events
+GET /admin/problem-events/{problemEventId}
+POST /admin/problem-events/{problemEventId}/reprocess
+POST /admin/problem-events/{problemEventId}/ignore
+POST /admin/problem-events/{problemEventId}/manual-review
+POST /admin/problem-events/{problemEventId}/dlq
+```
 
 ## Переменные окружения
 
@@ -93,6 +113,13 @@ Consumer:
 | `EMAIL_DLQ_QUEUE` | `oms4.email.send.dlq` | DLQ queue |
 | `EMAIL_RETRY_DELAY_MS` | `30000` | Задержка retry |
 | `EMAIL_MAX_RETRIES` | `3` | Максимум retry перед DLQ |
+| `PROBLEM_EVENTS_RETRY_EXCHANGE` | `problem-events.retry.exchange` | Exchange retry problem events |
+| `PROBLEM_EVENTS_REPROCESS_EXCHANGE` | `problem-events.reprocess.exchange` | Exchange reprocess problem events |
+| `PROBLEM_EVENTS_RETRY_5M_QUEUE` | `problem-events.retry.5m` | Retry queue 5 минут |
+| `PROBLEM_EVENTS_RETRY_15M_QUEUE` | `problem-events.retry.15m` | Retry queue 15 минут |
+| `PROBLEM_EVENTS_RETRY_1H_QUEUE` | `problem-events.retry.1h` | Retry queue 1 час |
+| `PROBLEM_EVENTS_REPROCESS_QUEUE` | `problem-events.reprocess` | Очередь автоматической повторной обработки |
+| `PROBLEM_EVENTS_MANUAL_REPROCESS_QUEUE` | `problem-events.reprocess.manual` | Очередь ручной повторной обработки |
 
 ## Локальный запуск
 
