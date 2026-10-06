@@ -9,6 +9,7 @@ from pydantic import BaseModel, EmailStr
 
 from app.healthcheck.router import router as healthcheck_router
 from app.kafka import consume_events, publish_event
+from app.logging_config import configure_logging
 from app.problem_events import (
     EventProcessingError,
     enqueue_manual_reprocess,
@@ -19,6 +20,8 @@ from app.problem_events import (
 )
 from app.rabbitmq import enqueue_email_command
 from app.settings import settings
+
+configure_logging()
 
 app = FastAPI(title="OMS4 Notification Service", version="0.2.0", root_path=settings.root_path)
 app.add_middleware(
@@ -68,8 +71,12 @@ def process_shift_status_changed_event(event: dict) -> None:
     if event.get("reason") == "force_technical_error":
         raise EventProcessingError("technical", "temporary_dependency_error", "Temporary dependency error")
     if event_id in processed_shift_status_events:
-        logger.info("Skipping duplicate shift status event", extra={"event_id": event_id, "shift_id": shift_id})
+        logger.info(
+            "Skipping duplicate shift status event",
+            extra={"event_id": event_id, "correlation_id": event.get("correlation_id"), "shift_id": shift_id},
+        )
         return
+    notification_required = shift_status_requires_notification(event)
     decision = {
         "event_id": event_id,
         "correlation_id": event.get("correlation_id"),
@@ -77,12 +84,20 @@ def process_shift_status_changed_event(event: dict) -> None:
         "previous_status": event.get("previous_status"),
         "new_status": event.get("new_status"),
         "reason": event.get("reason"),
-        "notification_required": shift_status_requires_notification(event),
+        "notification_required": notification_required,
         "decided_at": datetime.now(timezone.utc),
     }
     shift_status_notification_decisions.append(decision)
     processed_shift_status_events.add(event_id)
-    logger.info("Processed shift status notification decision", extra={"event_id": event_id, "shift_id": shift_id})
+    logger.info(
+        "Processed shift status notification decision",
+        extra={
+            "event_id": event_id,
+            "correlation_id": event.get("correlation_id"),
+            "shift_id": shift_id,
+            "notification_required": notification_required,
+        },
+    )
 
 
 def handle_shift_status_changed(event: dict, metadata: dict | None = None) -> None:

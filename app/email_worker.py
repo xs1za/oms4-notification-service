@@ -8,10 +8,11 @@ import pika
 
 from app.email_delivery import send_email_message
 from app.kafka import publish_event
+from app.logging_config import configure_logging
 from app.rabbitmq import EMAIL_DLQ_ROUTING_KEY, EMAIL_RETRY_ROUTING_KEY, create_connection, declare_email_topology
 from app.settings import settings
 
-logging.basicConfig(level=logging.INFO)
+configure_logging()
 logger = logging.getLogger(__name__)
 
 
