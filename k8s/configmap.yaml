@@ -7,6 +7,7 @@ data:
   SERVICE_NAME: OMS4
   ROOT_PATH: /oms4
   KAFKA_BOOTSTRAP_SERVERS: kafka.oms.svc.cluster.local:9092
+  KAFKA_SHIFT_STATUS_GROUP_ID: oms4.shift-status-notifications
   SMTP_HOST: mailhog
   SMTP_PORT: "1025"
   EMAIL_FROM: noreply@oms.local
@@ -18,3 +19,11 @@ data:
   EMAIL_DLQ_QUEUE: oms4.email.send.dlq
   EMAIL_RETRY_DELAY_MS: "30000"
   EMAIL_MAX_RETRIES: "3"
+  PROBLEM_EVENTS_RETRY_EXCHANGE: problem-events.retry.exchange
+  PROBLEM_EVENTS_REPROCESS_EXCHANGE: problem-events.reprocess.exchange
+  PROBLEM_EVENTS_RETRY_5M_QUEUE: problem-events.retry.5m
+  PROBLEM_EVENTS_RETRY_15M_QUEUE: problem-events.retry.15m
+  PROBLEM_EVENTS_RETRY_1H_QUEUE: problem-events.retry.1h
+  PROBLEM_EVENTS_REPROCESS_QUEUE: problem-events.reprocess
+  PROBLEM_EVENTS_MANUAL_REPROCESS_QUEUE: problem-events.reprocess.manual
+  PROBLEM_EVENTS_STORE_PATH: /data/problem-events/oms4-problem-events.json
