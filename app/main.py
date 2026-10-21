@@ -20,6 +20,7 @@ from app.problem_events import (
 )
 from app.rabbitmq import enqueue_email_command
 from app.settings import settings
+from app.notification_storage import notification_storage
 
 configure_logging()
 
@@ -113,6 +114,7 @@ def start_shift_status_consumer() -> None:
 
 @app.on_event("startup")
 def start_consumers() -> None:
+    notification_storage.migrate()
     Thread(target=start_shift_status_consumer, daemon=True).start()
 
 
@@ -184,17 +186,29 @@ def dlq_problem_event(problem_event_id: str, payload: ManualProblemEventAction, 
 @app.post("/notifications/email")
 def send_email(payload: EmailNotification) -> dict:
     command_id = str(uuid4())
+    template = notification_storage.upsert_active_template(settings.notification_template_code, payload.subject, payload.body)
+    correlation_id = f"corr_{uuid4().hex}"
+    delivery, created = notification_storage.create_delivery(
+        notification_id=command_id,
+        recipient=payload.to,
+        template=template,
+        payload={"to": payload.to, "subject": payload.subject, "body": payload.body},
+        correlation_id=correlation_id,
+    )
+    if not created:
+        return delivery
     command = {
         "commandId": command_id,
         "commandType": "email.send",
-        "correlationId": f"corr_{uuid4().hex}",
+        "correlationId": correlation_id,
         "createdAt": datetime.now(timezone.utc),
         "payload": {"to": payload.to, "subject": payload.subject, "body": payload.body},
     }
     try:
         enqueue_email_command(command)
     except Exception as exc:
+        notification_storage.update_delivery(command_id, "failed", "Email command queue is unavailable")
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Email command queue is unavailable") from exc
-    event = {"notification_id": command_id, "channel": "email", "to": payload.to, "status": "queued", "created_at": datetime.now(timezone.utc)}
+    event = {"notification_id": command_id, "channel": "email", "to": payload.to, "status": delivery["status"], "created_at": delivery["createdAt"]}
     publish_event("notification.email_status", event)
     return event
