@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     problem_events_reprocess_queue: str = "problem-events.reprocess"
     problem_events_manual_reprocess_queue: str = "problem-events.reprocess.manual"
     problem_events_store_path: str = "/tmp/oms4-problem-events.json"
+    database_url: str = "postgresql://oms4:oms4@oms4-postgres:5432/oms4"
+    notification_template_code: str = "email.default"
 
 
 settings = Settings()

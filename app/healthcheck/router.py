@@ -5,6 +5,7 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 
 from app.settings import settings
+from app.notification_storage import notification_storage
 
 router = APIRouter(prefix="/health", tags=["healthcheck"])
 
@@ -39,9 +40,14 @@ def live() -> dict:
 @router.get("/ready")
 def ready() -> JSONResponse:
     kafka = check_tcp_endpoint(settings.kafka_bootstrap_servers)
+    try:
+        notification_storage.check()
+        database = {"status": "ok", "endpoint": settings.database_url.rsplit("@", 1)[-1]}
+    except Exception as exc:  # noqa: BLE001 - readiness must report dependency failure.
+        database = {"status": "failed", "error": str(exc)}
     smtp = {"status": "not_checked", "endpoint": f"{settings.smtp_host}:{settings.smtp_port}"}
-    checks = {"kafka": kafka, "smtp": smtp | {"required": False}}
-    ready_status = "ok" if kafka["status"] == "ok" else "failed"
+    checks = {"kafka": kafka, "database": database, "smtp": smtp | {"required": False}}
+    ready_status = "ok" if kafka["status"] == "ok" and database["status"] == "ok" else "failed"
     return JSONResponse(
         status_code=status.HTTP_200_OK if ready_status == "ok" else status.HTTP_503_SERVICE_UNAVAILABLE,
         content={"status": ready_status, "service": settings.service_name, "checks": checks},
